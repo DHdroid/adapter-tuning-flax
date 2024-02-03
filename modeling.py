@@ -124,7 +124,8 @@ class FlaxAdapterBertOutput(FlaxBertOutput):
         for adapter in self.adapters:
             hidden_states = adapter(hidden_states, residual)
 
-        hidden_states = self.LayerNorm(residual + hidden_states)
+        if self.config.num_adapters > 0:
+            hidden_states = self.LayerNorm(attention_output + hidden_states)
         return hidden_states
 
 

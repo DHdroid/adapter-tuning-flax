@@ -196,7 +196,6 @@ def main(args: DictConfig):
             batch = next(train_loader)
             batch = shard(batch)
             loss, acc, state = p_train_step(state, batch)
-            print(f"Accuracy: {acc[0]} Loss: {loss[0]}")
             train_losses.append(loss)
             if step % train_args.train_logging_steps == 0 and step > 0:
                 print(f"{step}/{train_steps_per_epoch} | loss = {np.mean(train_losses)}")
