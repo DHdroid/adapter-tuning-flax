@@ -1,0 +1,35 @@
+model:
+  model_name: bert-base-multilingual-cased
+  tokenizer_name:
+  adapters:
+    - name_prefix: language
+      reduce_factor: 4
+      freeze: true
+      pretrained_weights: language_adapter_ab.pickle
+    - name_prefix: task
+      reduce_factor: 4
+      freeze: false
+      pretrained_weights:
+
+
+train:
+  per_device_train_batch_size: 8
+  per_device_validation_batch_size: 16
+  train_logging_steps: 100
+  num_train_epochs: 10
+  warmup_steps: 100
+  learning_rate: 1e-5
+  adam_beta1: 0.9
+  adam_beta2: 0.999
+  adam_epsilon: 1e-8
+  weight_decay: 0.0
+  mlm_probability: 0.15
+
+dataset:
+  dataset_name: wikimedia/wikipedia
+  dataset_config_name: 20231101.ab
+  text_column_name: text
+  preprocess_num_workers: 16
+  num_workers: 16
+
+  
