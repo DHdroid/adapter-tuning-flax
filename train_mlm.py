@@ -28,6 +28,7 @@ from modeling import FlaxAdapterBertForMaskedLM
 from utils import softmax_cross_entropy_with_integer_labels
 from utils import compute_accuracy
 
+
 def requires_grad(path, config):
     for adapter_conf in config.adapters:
         if f"{adapter_conf['name_prefix']}_adapter" in path and not adapter_conf['freeze']:
@@ -151,7 +152,6 @@ def load_adapter_params(params, config):
                 loaded_weights = pickle.load(f)
             for path in params_dict:
                 if adapter_name in path:
-                    print(path)
                     params_dict[path] = loaded_weights[path]
     params = traverse_util.unflatten_dict(params_dict)
     return params
@@ -248,6 +248,7 @@ def main(args: DictConfig):
     
     params = jax_utils.unreplicate(state.params)
     save_adapter_params(params, "language")
+
 
 if __name__ == "__main__":
     main()
