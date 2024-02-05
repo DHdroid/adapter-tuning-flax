@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from typing import Callable, Optional, Tuple
 
 import flax
@@ -56,8 +57,7 @@ class AdapterBertConfig(PretrainedConfig):
         position_embedding_type="absolute",
         use_cache=True,
         classifier_dropout=None,
-        num_adapters=1,
-        adapter_reduce_factor=2,
+        adapters=None,
         **kwargs,
     ):
         super().__init__(pad_token_id=pad_token_id, **kwargs)
@@ -77,16 +77,16 @@ class AdapterBertConfig(PretrainedConfig):
         self.position_embedding_type = position_embedding_type
         self.use_cache = use_cache
         self.classifier_dropout = classifier_dropout
-        self.num_adapters = num_adapters
-        self.adapter_reduce_factor = adapter_reduce_factor
+        self.adapters = adapters
 
 
 class FlaxAdapterLayer(nn.Module):
     config: AdapterBertConfig
+    reduce_factor: int
 
     def setup(self):
         self.down_proj = nn.Dense(
-            self.config.hidden_size // self.config.adapter_reduce_factor,
+            self.config.hidden_size // self.reduce_factor,
             kernel_init=jax.nn.initializers.normal(self.config.initializer_range) # 0.02
         )
         self.act = nn.relu
@@ -114,7 +114,7 @@ class FlaxAdapterBertOutput(FlaxBertOutput):
         )
         self.dropout = nn.Dropout(rate=self.config.hidden_dropout_prob)
         self.LayerNorm = nn.LayerNorm(epsilon=self.config.layer_norm_eps, dtype=self.dtype)
-        self.adapters = [FlaxAdapterLayer(self.config, name=f"bert_adapter_{i}") for i in range(self.config.num_adapters)]
+        self.adapters = [FlaxAdapterLayer(self.config, adapter["reduce_factor"], name=f"{adapter['name_prefix']}_adapter") for adapter in self.config.adapters]
 
     def __call__(self, hidden_states, attention_output, deterministic: bool = True):
         hidden_states = self.dense(hidden_states)
@@ -124,7 +124,7 @@ class FlaxAdapterBertOutput(FlaxBertOutput):
         for adapter in self.adapters:
             hidden_states = adapter(hidden_states, residual)
 
-        if self.config.num_adapters > 0:
+        if len(self.adapters) > 0:
             hidden_states = self.LayerNorm(attention_output + hidden_states)
         return hidden_states
 

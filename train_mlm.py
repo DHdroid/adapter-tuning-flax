@@ -2,6 +2,7 @@ import argparse
 from functools import partial
 import yaml
 import os
+import random
 os.environ['TRANSFORMERS_NO_ADVISORY_WARNINGS'] = 'true'
 
 import hydra
@@ -12,6 +13,7 @@ from flax.training.train_state import TrainState
 import jax
 import jax.numpy as jnp
 import numpy as np
+import pickle
 
 from omegaconf import DictConfig, OmegaConf
 import optax
@@ -27,15 +29,15 @@ from utils import softmax_cross_entropy_with_integer_labels
 from utils import compute_accuracy
 
 def requires_grad(path, config):
-    for i in range(config.num_adapters):
-        if f"bert_adapter_{i}" in path:
+    for adapter_conf in config.adapters:
+        if f"{adapter_conf['name_prefix']}_adapter" in path and not adapter_conf['freeze']:
             return "grad"
     return "freeze"
 
 
 def requires_decay(path, config):
-    for i in range(config.num_adapters):
-        if f"bert_adapter_{i}" in path:
+    for adapter_conf in config.adapters:
+        if f"{adapter_conf['name_prefix']}_adapter" in path and not adapter_conf['freeze']:
             return True
     return False
 
@@ -127,18 +129,48 @@ def shard(batch):
     return sharded
 
 
-@hydra.main(version_base=None, config_path="conf", config_name="config")
+def save_adapter_params(params, adapter_prefix, save_path=None):
+    params_dict = traverse_util.flatten_dict(params)
+    adapter_name = f"{adapter_prefix}_adapter"
+    adapter_params = dict()
+    for path in params_dict:
+        if adapter_name in path:
+            adapter_params[path] = params_dict[path]
+    save_path = save_path or f"{adapter_name}.pickle"
+    with open(save_path, "wb") as f:
+        pickle.dump(adapter_params, f)
+    return
+
+
+def load_adapter_params(params, config):
+    params_dict = traverse_util.flatten_dict(params)
+    for adapter in config.adapters:
+        if adapter["pretrained_weights"]:
+            adapter_name = f"{adapter['name_prefix']}_adapter"
+            with open(adapter["pretrained_weights"], "rb") as f:
+                loaded_weights = pickle.load(f)
+            for path in params_dict:
+                if adapter_name in path:
+                    print(path)
+                    params_dict[path] = loaded_weights[path]
+    params = traverse_util.unflatten_dict(params_dict)
+    return params
+
+
+@hydra.main(version_base=None, config_path="conf", config_name="mlm_config")
 def main(args: DictConfig):
+    random.seed(42)
+    np.random.seed(42)
     model_args = args.model
     dataset_args = args.dataset
     train_args = args.train
     ### Initialized HuggingFace Config
     config = AdapterBertConfig.from_pretrained(model_args.model_name)
-    config.num_adapters = model_args.num_adapters
-    config.adapter_reduce_factor = model_args.adapter_reduce_factor
+    config.adapters = OmegaConf.to_object(model_args.adapters)
 
     ### Initialize Model w/ Adapter
     model = FlaxAdapterBertForMaskedLM.from_pretrained(model_args.model_name, config=config)
+    model.params = load_adapter_params(model.params, config)
 
     ### Initialize Tokenizer from Config
     tokenizer = AutoTokenizer.from_pretrained(
@@ -213,7 +245,9 @@ def main(args: DictConfig):
             validation_losses.append(loss)
             validation_accs.append(acc)
         print(f"Epoch {epoch} | validation loss = {np.mean(validation_losses)}, accuracy = {np.mean(validation_accs)}")
-
+    
+    params = jax_utils.unreplicate(state.params)
+    save_adapter_params(params, "language")
 
 if __name__ == "__main__":
     main()
