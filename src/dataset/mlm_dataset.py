@@ -6,10 +6,15 @@ import datasets
 
 
 def group_texts(examples,
-                max_seq_length: int):
+                max_seq_length: int):   
+    # print(len(examples["input_ids"][0]))
+    # print(list(examples.keys()), flush=True)
+    # exit()
+    # breakpoint()
     # Concatenate all texts.
     concatenated_examples = {k: list(chain(*examples[k])) for k in examples.keys()}
     total_length = len(concatenated_examples[list(examples.keys())[0]])
+    # print(f"length: {total_length}")
     # We drop the small remainder, and if the total_length < max_seq_length  we exclude this batch and return an empty dict.
     # We could add padding if the model supported it instead of this drop, you can customize this part to your needs.
     total_length = (total_length // max_seq_length) * max_seq_length
@@ -22,9 +27,14 @@ def group_texts(examples,
 
 
 def tokenize_function(examples, tokenizer, text_column_name):
-    return tokenizer(examples[text_column_name],
-                     return_special_tokens_mask=True,
-                     return_tensors="np")
+    tokenized = tokenizer(examples[text_column_name],
+                          return_special_tokens_mask=True,
+                          return_attention_mask=True,
+                          return_tensors="np",
+                          padding="max_length",
+                          max_length=tokenizer.model_max_length,
+                          truncation=True)
+    return tokenized
 
 
 def get_raw_datasets(dataset_name: str,
@@ -60,10 +70,12 @@ def prepare_dataset(tokenizer,
         num_proc=args.preprocess_num_workers,
         remove_columns=list(raw_datasets["train"].features),
     )
-    tokenized_datasets = tokenized_datasets.map(
-        partial(group_texts,
-                max_seq_length=max_seq_length),
-        batched=True,
-        num_proc=args.preprocess_num_workers,
-    )
+    # tokenized_datasets = tokenized_datasets.map(
+    #     partial(group_texts,
+    #             max_seq_length=max_seq_length),
+    #     batched=True,
+    #     num_proc=args.preprocess_num_workers,
+    # )
+    # tokenized_datasets.cleanup_cache_files()
+
     return tokenized_datasets

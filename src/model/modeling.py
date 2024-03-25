@@ -118,14 +118,14 @@ class FlaxAdapterBertOutput(FlaxBertOutput):
 
     def __call__(self, hidden_states, attention_output, deterministic: bool = True):
         hidden_states = self.dense(hidden_states)
-        residual = self.dropout(hidden_states, deterministic=deterministic)
-        hidden_states = self.LayerNorm(residual + attention_output)
+        hidden_states = self.dropout(hidden_states, deterministic=deterministic)
 
         for adapter in self.adapters:
+            residual = hidden_states
+            hidden_states = self.LayerNorm(hidden_states + attention_output)
             hidden_states = adapter(hidden_states, residual)
 
-        if len(self.adapters) > 0:
-            hidden_states = self.LayerNorm(attention_output + hidden_states)
+        hidden_states = self.LayerNorm(attention_output + hidden_states)
         return hidden_states
 
 
@@ -234,6 +234,45 @@ class FlaxAdapterBertModule(FlaxBertModule):
         self.pooler = FlaxBertPooler(self.config, dtype=self.dtype)
 
 
+class FlaxAdapterBertForRetrievalModule(nn.Module):
+    config: AdapterBertConfig
+    dtype: jnp.dtype = jnp.float32
+    gradient_checkpointing: bool = False
+
+    def setup(self):
+        self.bert = FlaxAdapterBertModule(
+            config=self.config,
+            dtype=self.dtype,
+            gradient_checkpointing=self.gradient_checkpointing,
+        )
+
+    def __call__(
+        self,
+        input_ids,
+        attention_mask,
+        token_type_ids,
+        position_ids,
+        head_mask,
+        deterministic: bool = True,
+        output_attentions: bool = False,
+        output_hidden_states: bool = False,
+        return_dict: bool = True,
+    ):
+        # Model
+        outputs = self.bert(
+            input_ids,
+            attention_mask,
+            token_type_ids,
+            position_ids,
+            head_mask,
+            deterministic=deterministic,
+            output_attentions=output_attentions,
+            output_hidden_states=output_hidden_states,
+            return_dict=return_dict,
+        )
+        return outputs
+
+
 class FlaxAdapterBertForMaskedLMModule(FlaxBertForMaskedLMModule):
     config: AdapterBertConfig
     dtype: jnp.dtype = jnp.float32
@@ -251,6 +290,10 @@ class FlaxAdapterBertForMaskedLMModule(FlaxBertForMaskedLMModule):
 
 class FlaxAdapterBertForMaskedLM(FlaxBertPreTrainedModel):
     module_class = FlaxAdapterBertForMaskedLMModule
+
+
+class FlaxAdapterBertForRetrieval(FlaxBertPreTrainedModel):
+    module_class = FlaxAdapterBertForRetrievalModule
 
 
 if __name__ == "__main__":
