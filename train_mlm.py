@@ -149,7 +149,7 @@ def main(args: DictConfig):
         print(f"Epoch {epoch} | validation loss = {np.mean(validation_losses)}, accuracy = {np.mean(validation_accs)}")
     
     params = jax_utils.unreplicate(state.params)
-    save_adapter_params(params, "language", save_path=f"{dataset_args.dataset_config_name}.pickle")
+    save_adapter_params(params, "language", save_path=f"{dataset_args.dataset_config_name}.pkl")
 
 
 if __name__ == "__main__":

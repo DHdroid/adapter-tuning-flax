@@ -4,17 +4,14 @@ model:
   adapters:
     - name_prefix: language
       reduce_factor: 4
-      freeze: true
-      pretrained_weights: LA/en_4.pkl
+      pretrained_weights:
     - name_prefix: task
       reduce_factor: 4
-      freeze: false
       pretrained_weights:
 
 train:
   seed: 42
-  per_device_train_batch_size: 16
-  per_device_validation_batch_size: 32
+  per_device_eval_batch_size: 32
   train_logging_steps: 100
   num_train_epochs: 1
   warmup_steps: 100
@@ -23,15 +20,23 @@ train:
   adam_beta2: 0.999
   adam_epsilon: 1e-8
   weight_decay: 0.0
+  local_rank: 0
+  dataloader_num_workers: 16
 
 dataset:
-  dataset_name: Tevatron/msmarco-passage
-  dataset_language: default
+  dataset_name: castorini/mr-tydi-corpus
+  dataset_language: swahili
   dataset_split: train
-  preprocess_num_workers: 16
-  num_workers: 16
-  train_n_passages: 8
-  q_max_len: 16
+  q_max_len: 32
   p_max_len: 128
+  encode_num_shard: 1
+  encode_shard_index: 0
+  encode_is_qry:
+  encoded_save_path:
+  dataset_proc_num: 16
+  passage_field_separator: sep_token
+
+
+
 
   
