@@ -68,24 +68,3 @@ if __name__ == "__main__":
         passage_path = main(exp_dict["LA"], exp_dict["TA"], exp_dict["lang"], False)
         os.system(FAISS_COMMAND.format(query_path=qry_path, passage_path=passage_path, language=exp_dict["lang"]))
         os.system(EVAL_COMMAND.format(language=exp_dict["lang"]))
-
-
-
-"""
-python run_tydi.py
-
-python -m tevatron.faiss_retriever \
---query_reps encoded/sw_4_en_prev_swahili_query.pkl \
---passage_reps encoded/sw_4_en_prev_swahili_corpus.pkl \
---depth 100 \
---batch_size -1 \
---save_text \
---save_ranking_to run.mrtydi.swahili.test.txt
-
-python -m tevatron.utils.format.convert_result_to_trec --input run.mrtydi.swahili.test.txt --output run.mrtydi.swahili.test.trec
-python -m pyserini.eval.trec_eval -c -mrecip_rank -mrecall.100 mrtydi-v1.0-swahili/qrels.test.txt run.mrtydi.swahili.test.trec
-
-
-wget https://git.uwaterloo.ca/jimmylin/mr.tydi/-/raw/master/data/mrtydi-v1.0-swahili.tar.gz
-tar -xvf mrtydi-v1.0-swahili.tar.gz
-"""
