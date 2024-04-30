@@ -44,13 +44,7 @@ class QueryPreProcessor:
 
     def __call__(self, example):
         query_id = example['query_id']
-        text_words = example['query'].split(" ")
-        for _ in range(2):
-            random_idx = random.randint(1, len(text_words))
-            text_words.insert(random_idx, self.tokenizer.mask_token)
-
-        text = " ".join(text_words)
-        query = self.tokenizer.encode(text,
+        query = self.tokenizer.encode(example["query"],
                                       add_special_tokens=False,
                                       max_length=self.query_max_length,
                                       truncation=True)
@@ -70,7 +64,6 @@ class CorpusPreProcessor:
                                      add_special_tokens=False,
                                      max_length=self.text_max_length,
                                      truncation=True)
-
         return {'text_id': docid, 'text': text}
 
 

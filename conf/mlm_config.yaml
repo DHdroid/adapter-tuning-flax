@@ -23,7 +23,7 @@ train:
 
 dataset:
   dataset_name: wikimedia/wikipedia
-  dataset_config_name: 20231101.en
+  dataset_config_name: 20231101.sw
   text_column_name: text
   preprocess_num_workers: 16
   num_workers: 16

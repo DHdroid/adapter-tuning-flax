@@ -164,3 +164,15 @@ outputs/
 
 # Adapters
 *.pickle
+LA/*
+TA/*
+
+# encoded data
+encoded/*
+
+# mrtydi
+mrtydi/*
+
+# eval data
+eval/*
+

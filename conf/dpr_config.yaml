@@ -5,7 +5,7 @@ model:
     - name_prefix: language
       reduce_factor: 4
       freeze: true
-      pretrained_weights: LA/en_4.pkl
+      pretrained_weights: LA/en_prev.pkl
     - name_prefix: task
       reduce_factor: 4
       freeze: false
@@ -16,7 +16,7 @@ train:
   per_device_train_batch_size: 16
   per_device_validation_batch_size: 32
   train_logging_steps: 100
-  num_train_epochs: 1
+  num_train_epochs: 5
   warmup_steps: 100
   learning_rate: 1e-5
   adam_beta1: 0.9

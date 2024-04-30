@@ -140,7 +140,7 @@ def main(args: DictConfig):
                 train_losses = []
     
     params = jax_utils.unreplicate(state.params)
-    save_adapter_params(params, "task", save_path=f"task_adapter.pickle")
+    save_adapter_params(params, "task", save_path=f"task_adapter.pkl")
 
 
 if __name__ == "__main__":
